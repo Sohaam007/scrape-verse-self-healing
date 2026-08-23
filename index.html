@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#241b13">
+<meta name="description" content="A till receipt for twenty books, checked out of a web scraper.">
+<title>Scrape-Verse — Extraction Receipt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --counter: #241b13;
+    --paper: #e9ebe1;
+    --ink: #211a12;
+    --muted: #7a7266;
+    --border: #c9c4b0;
+    --brass: #ad7f2e;
+    --brass-glow: #d9ad5c;
+    --highlight: rgba(173, 127, 46, 0.1);
+    --ok: #4b6b45;
+    --warn: #9a4b3f;
+    --display: 'DotGothic16', 'Courier New', monospace;
+    --mono: 'JetBrains Mono', 'Courier New', monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    background-color: var(--counter);
+    background-image: repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.015) 0px,
+      rgba(255, 255, 255, 0.015) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    color: var(--paper);
+    font-family: var(--mono);
+    -webkit-font-smoothing: antialiased;
+    padding: 60px 18px 90px;
+    min-height: 100vh;
+  }
+
+  .counter { max-width: 620px; margin: 0 auto; }
+
+  /* ---------- Lookup, sits on the counter ---------- */
+
+  .lookup { max-width: 360px; margin: 0 auto 42px; text-align: center; }
+
+  .lookup-label {
+    display: block;
+    font-size: 0.66rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--brass-glow);
+    margin-bottom: 9px;
+  }
+
+  .lookup-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1.5px solid rgba(217, 173, 92, 0.35);
+    border-radius: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    color: var(--paper);
+    font-family: var(--mono);
+    font-size: 0.92rem;
+    padding: 11px 14px;
+    outline: none;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+  }
+  .lookup-input::placeholder { color: rgba(233, 235, 225, 0.38); }
+  .lookup-input:focus {
+    border-color: var(--brass-glow);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  /* ---------- The receipt itself ---------- */
+
+  .receipt {
+    background: var(--paper);
+    color: var(--ink);
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 48px 32px 40px;
+    clip-path: polygon(
+      0.00% 0px, 5.00% 10px, 10.00% 0px, 15.00% 10px, 20.00% 0px,
+      25.00% 10px, 30.00% 0px, 35.00% 10px, 40.00% 0px, 45.00% 10px,
+      50.00% 0px, 55.00% 10px, 60.00% 0px, 65.00% 10px, 70.00% 0px,
+      75.00% 10px, 80.00% 0px, 85.00% 10px, 90.00% 0px, 95.00% 10px,
+      100.00% 0px,
+      100.00% 100%, 95.00% calc(100% - 10px), 90.00% 100%, 85.00% calc(100% - 10px),
+      80.00% 100%, 75.00% calc(100% - 10px), 70.00% 100%, 65.00% calc(100% - 10px),
+      60.00% 100%, 55.00% calc(100% - 10px), 50.00% 100%, 45.00% calc(100% - 10px),
+      40.00% 100%, 35.00% calc(100% - 10px), 30.00% 100%, 25.00% calc(100% - 10px),
+      20.00% 100%, 15.00% calc(100% - 10px), 10.00% 100%, 5.00% calc(100% - 10px),
+      0.00% 100%
+    );
+    filter:
+      drop-shadow(0 26px 22px rgba(0, 0, 0, 0.35))
+      drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3));
+    animation: receipt-in 0.65s cubic-bezier(0.16, 0.84, 0.44, 1) both;
+  }
+
+  @keyframes receipt-in {
+    from { opacity: 0; transform: translateY(26px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ---------- Masthead ---------- */
+
+  .masthead { text-align: center; }
+
+  .store-name {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(1.7rem, 6vw, 2.3rem);
+    letter-spacing: 0.07em;
+    margin: 0 0 6px;
+    color: var(--ink);
+  }
+
+  .receipt-label {
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 18px;
+  }
+
+  .barcode {
+    height: 26px;
+    max-width: 210px;
+    margin: 0 auto 16px;
+    opacity: 0.85;
+    background-image: repeating-linear-gradient(
+      90deg,
+      var(--ink) 0px, var(--ink) 3px,
+      transparent 3px, transparent 5px,
+      var(--ink) 5px, var(--ink) 6px,
+      transparent 6px, transparent 9px,
+      var(--ink) 9px, var(--ink) 13px,
+      transparent 13px, transparent 15px,
+      var(--ink) 15px, var(--ink) 16px,
+      transparent 16px, transparent 19px,
+      var(--ink) 19px, var(--ink) 23px,
+      transparent 23px, transparent 26px
+    );
+  }
+  .barcode--footer { margin: 22px auto 14px; }
+
+  .meta { margin: 0 0 4px; }
+  .meta p {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  /* ---------- Tear divider ---------- */
+
+  .tear {
+    border-top: 2px dotted var(--border);
+    margin: 22px 0 20px;
+  }
+
+  /* ---------- Line items ---------- */
+
+  .item {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    padding: 15px 8px;
+    margin: 0 -8px;
+    border-bottom: 1px dashed var(--border);
+    transition: background-color 0.15s ease;
+  }
+  .items > .item:first-child { padding-top: 4px; }
+  .items > .item:last-child { border-bottom: none; }
+
+  .item:hover,
+  .item:focus-visible {
+    background-color: var(--highlight);
+  }
+  .item:focus-visible {
+    outline: 2px solid var(--brass);
+    outline-offset: -2px;
+  }
+
+  .item-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 5px;
+  }
+
+  .item-code {
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    color: var(--brass);
+  }
+
+  .item-arrow {
+    font-size: 0.85rem;
+    color: var(--brass);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  .item:hover .item-arrow,
+  .item:focus-visible .item-arrow {
+    opacity: 1;
+  }
+
+  .item-title {
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 0.98rem;
+    line-height: 1.42;
+    margin: 0 0 9px;
+    color: var(--ink);
+  }
+
+  .item-line {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .item-status {
+    font-size: 0.76rem;
+    color: var(--ok);
+    white-space: nowrap;
+  }
+  .item-status.is-unavailable { color: var(--warn); }
+
+  .item-dots {
+    flex: 1 1 auto;
+    min-width: 12px;
+    border-bottom: 2px dotted var(--border);
+    margin-bottom: 4px;
+  }
+
+  .item-price {
+    font-weight: 700;
+    font-size: 0.94rem;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .empty-state {
+    text-align: center;
+    font-style: italic;
+    color: var(--muted);
+    font-size: 0.85rem;
+    padding: 30px 0;
+  }
+
+  /* ---------- Totals ---------- */
+
+  .totals { margin-top: 6px; }
+
+  .totals-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 4px 0;
+  }
+  .totals-row span:last-child { color: var(--ink); font-weight: 600; }
+
+  .totals-rule { border-top: 2px solid var(--ink); margin: 12px 0; }
+
+  .totals-row--total {
+    font-size: 1.05rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .totals-row--total span:last-child { color: var(--ink); }
+
+  /* ---------- Sign-off ---------- */
+
+  .sign-off {
+    text-align: center;
+    font-size: 0.74rem;
+    color: var(--muted);
+    margin: 0 0 6px;
+  }
+
+  .credit {
+    text-align: center;
+    font-size: 0.66rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  /* ---------- Responsive ---------- */
+
+  @media (max-width: 480px) {
+    .receipt { padding: 40px 22px 34px; }
+    body { padding: 44px 14px 70px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .receipt { animation: none; }
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="counter">
+
+    <div class="lookup">
+      <label for="search-input" class="lookup-label">Item lookup</label>
+      <input type="text" id="search-input" class="lookup-input" placeholder="look up a title…" autocomplete="off" aria-label="Search catalog by title">
+    </div>
+
+    <div class="receipt" id="receipt">
+
+      <div class="masthead">
+        <h1 class="store-name">SCRAPE·VERSE</h1>
+        <p class="receipt-label">extraction receipt</p>
+        <div class="barcode" aria-hidden="true"></div>
+        <div class="meta">
+          <p>books.toscrape.com</p>
+          <p>method: bright data cli</p>
+          <p>status: 200 ok</p>
+        </div>
+      </div>
+
+      <div class="tear" aria-hidden="true"></div>
+
+      <div class="items" id="book-grid" role="list"></div>
+
+      <div class="totals">
+        <div class="totals-row"><span>items</span><span id="stat-items">0</span></div>
+        <div class="totals-row"><span>avg. item</span><span id="stat-avg">—</span></div>
+        <div class="totals-rule"></div>
+        <div class="totals-row totals-row--total"><span>total</span><span id="stat-total">—</span></div>
+      </div>
+
+      <div class="barcode barcode--footer" aria-hidden="true"></div>
+      <p class="sign-off">extracted respectfully from a public demo catalog.</p>
+      <p class="credit">scrape-verse — built for a first hackathon</p>
+
+    </div>
+
+  </div>
+
+  <script>
+    const jsonData = [
+      { "title": "Tipping the Velvet", "price": { "value": 53.74, "currency": "GBP", "symbol": "£" }, "availability": "In stock", "product_page_url": "https://books.toscrape.com/catalogue/tipping-the-velvet_999/index.html" },
+      { "title": "Mesaerion: The Best Science Fiction Stories 1800-1849", "price": { "value": 37.59, "currency": "GBP", "symbol": "£" }, "availability": "In stock", "product_page_url": "https://books.toscrape.com/catalogue/mesaerion-the-best-science-fiction-stories-1800-1849_983/index.html" },
+      { "title": "It's Only the Himalayas", "price": { "value": 45.17, "currency": "GBP", "symbol": "£" }, "availability": "In stock", "product_page_url": "https://books.toscrape.com/catalogue/its-only-the-himalayas_981/index.html" },
+      { "title": "The Coming Woman: A Novel Based on the Life of the Infamous Feminist, Victoria Woodhull", "price": { "value": 17.93, "currency": "GBP", "symbol": "£" }, "availability": "In stock", "product_page_url": "https://books.toscrape.com/catalogue/the-coming-woman-a-novel-based-on-the-life-of-the-infamous-feminist-victoria-woodhull_993/index.html" },
+      { "title": "Rip it Up and Start Again", "price": { "value": 35.02, "currency": "GBP", "symbol": "£" }, "availability": "In stock", "product_page_url": "https://books.toscrape.com/catalogue/rip-it-up-and-start-again_986/index.html" },
+      { "title": "Shakespeare's Sonnets", "price": { "value": 20.66, "currency": "GBP", "symbol": "£" }, "availability": "In stock", "product_page_url": "https://books.toscrape.com/catalogue/shakespeares-sonnets_989/index.html" },
+      { "title": "Our Band Could Be Your Life: Scenes from the American Indie Underground, 1981-1991", "price": { "value": 57.25, "currency": "GBP", "symbol": "£" }, "availability": "In stock", "product_page_url": "https://books.toscrape.com/catalogue/our-band-could-be-your-life-scenes-from-the-american-indie-underground-1981-1991_985/index.html" },
+      { "title": "Set Me Free", "price": { "value": 17.46, "currency": "GBP", "symbol": "£" }, "availability": "In stock", "product_page_url": "https://books.toscrape.com/catalogue/set-me-free_988/index.html" },
+      { "title": "The Boys in the Boat: Nine Americans and Their Epic Quest for Gold at the 1936 Berlin Olympics", "price": { "value": 22.6, "currency": "GBP", "symbol": "£" }, "availability": "In stock", "product_page_url": "https://books.toscrape.com/catalogue/the-boys-in-the-boat-nine-americans-and-their-epic-quest-for-gold-at-the-1936-berlin-olympics_992/index.html" },
+      { "title": "Libertarianism for Beginners", "price": { "value": 51.33, "currency": "GBP", "symbol": "£" }, "availability": "In stock", "product_page_url": "https://books.toscrape.com/catalogue/libertarianism-for-beginners_982/index.html" },
+      { "title": "The Dirty Little Secrets of Getting Your Dream Job", "price": { "value": 33.34, "currency": "GBP", "symbol": "£" }, "availability": "In stock", "product_page_url": "https://books.toscrape.com/catalogue/the-dirty-little-secrets-of-getting-your-dream-job_994/index.html" },
+      { "title": "Sharp Objects", "price": { "value": 47.82, "currency": "GBP", "symbol": "£" }, "availability": "In stock", "product_page_url": "https://books.toscrape.com/catalogue/sharp-objects_997/index.html" },
+      { "title": "Sapiens: A Brief History of Humankind", "price": { "value": 54.23, "currency": "GBP", "symbol": "£" }, "availability": "In stock", "product_page_url": "https://books.toscrape.com/catalogue/sapiens-a-brief-history-of-humankind_996/index.html" },
+      { "title": "Starving Hearts (Triangular Trade Trilogy, #1)", "price": { "value": 13.99, "currency": "GBP", "symbol": "£" }, "availability": "In stock", "product_page_url": "https://books.toscrape.com/catalogue/starving-hearts-triangular-trade-trilogy-1_990/index.html" },
+      { "title": "Soumission", "price": { "value": 50.1, "currency": "GBP", "symbol": "£" }, "availability": "In stock", "product_page_url": "https://books.toscrape.com/catalogue/soumission_998/index.html" },
+      { "title": "The Requiem Red", "price": { "value": 22.65, "currency": "GBP", "symbol": "£" }, "availability": "In stock", "product_page_url": "https://books.toscrape.com/catalogue/the-requiem-red_995/index.html" },
+      { "title": "A Light in the Attic", "price": { "value": 51.77, "currency": "GBP", "symbol": "£" }, "availability": "In stock", "product_page_url": "https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html" },
+      { "title": "The Black Maria", "price": { "value": 52.15, "currency": "GBP", "symbol": "£" }, "availability": "In stock", "product_page_url": "https://books.toscrape.com/catalogue/the-black-maria_991/index.html" },
+      { "title": "Olio", "price": { "value": 23.88, "currency": "GBP", "symbol": "£" }, "availability": "In stock", "product_page_url": "https://books.toscrape.com/catalogue/olio_984/index.html" },
+      { "title": "Scott Pilgrim's Precious Little Life (Scott Pilgrim #1)", "price": { "value": 52.29, "currency": "GBP", "symbol": "£" }, "availability": "In stock", "product_page_url": "https://books.toscrape.com/catalogue/scott-pilgrims-precious-little-life-scott-pilgrim-1_987/index.html" }
+    ];
+
+    const catalog = jsonData.map((book, i) => Object.assign({}, book, {
+      code: 'SV-' + String(i + 1).padStart(3, '0')
+    }));
+
+    const itemsEl = document.getElementById('book-grid');
+    const searchInput = document.getElementById('search-input');
+    const statItems = document.getElementById('stat-items');
+    const statAvg = document.getElementById('stat-avg');
+    const statTotal = document.getElementById('stat-total');
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function currencySymbol() {
+      return catalog.length ? catalog[0].price.symbol : '';
+    }
+
+    function render(data) {
+      itemsEl.innerHTML = '';
+
+      if (data.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'empty-state';
+        empty.textContent = 'no matching titles in this batch.';
+        itemsEl.appendChild(empty);
+      } else {
+        data.forEach((book) => {
+          const inStock = /in stock/i.test(book.availability);
+          const a = document.createElement('a');
+          a.className = 'item';
+          a.href = book.product_page_url;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.setAttribute('role', 'listitem');
+          a.innerHTML = `
+            <div class="item-head">
+              <span class="item-code">${book.code}</span>
+              <span class="item-arrow" aria-hidden="true">↗</span>
+            </div>
+            <h2 class="item-title">${escapeHtml(book.title)}</h2>
+            <div class="item-line">
+              <span class="item-status${inStock ? '' : ' is-unavailable'}">${inStock ? '✓' : '✕'} ${escapeHtml(book.availability.toLowerCase())}</span>
+              <span class="item-dots" aria-hidden="true"></span>
+              <span class="item-price">${book.price.symbol}${book.price.value.toFixed(2)}</span>
+            </div>
+          `;
+          itemsEl.appendChild(a);
+        });
+      }
+
+      const sum = data.reduce((s, b) => s + b.price.value, 0);
+      const avg = data.length ? sum / data.length : 0;
+      const symbol = currencySymbol();
+
+      statItems.textContent = data.length;
+      statAvg.textContent = data.length ? symbol + avg.toFixed(2) : '—';
+      statTotal.textContent = symbol + sum.toFixed(2);
+    }
+
+    searchInput.addEventListener('input', (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      const filtered = q ? catalog.filter((b) => b.title.toLowerCase().indexOf(q) !== -1) : catalog;
+      render(filtered);
+    });
+
+    render(catalog);
+  </script>
+
+</body>
+</html>
