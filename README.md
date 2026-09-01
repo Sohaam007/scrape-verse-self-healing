@@ -1,4 +1,4 @@
-# scrape-verse-self-healing
+# Scrape-Verse-Self-Healing
 # Self-Healing Scraper: Books to Scrape
 
 This project was built for the Scrape-Verse Hackathon to demonstrate a resilient, self-healing data pipeline using the Bright Data CLI.
